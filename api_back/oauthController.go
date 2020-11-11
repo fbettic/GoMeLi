@@ -2,6 +2,7 @@ package api_back
 
 import (
 	"GoMeLi/api_front"
+	//"GoMeLi/api_front"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -10,21 +11,23 @@ import (
 	"net/http"
 )
 
+// Esta variable contendra el codigo para obtener el accses token y posteriormente el refresh_token
+var code string
 
-var code string // Esta variable contendra el codigo para obtener el accses token y posteriormente el refresh_token
+// se almacenara el access token para las posteriores transacciones
+var AccessToken string
 
-var AccessToken string // se almacenara el access token para las posteriores transacciones
-
-var url string = "http://localhost:80/webtest/oauth" // URL puesta en la app de MeLi
+// URL puesta en la app de MeLi
+var url string = "http://localhost:80/webtest/oauth"
 
 // struct que se enviara como body para obtener el Access token
 type Token struct {
 	GrantType string 		`json:"grant_type"`
 	ClientId int 			`json:"client_id"`
 	ClientSecret string 	`json:"client_secret"`
-	Code string				`json:"code"`
-	RedirectUri string 		`json:"redirect_uri,omitempty"` //el ",omitempty" sirve para que al pasar el struct a
-															//JSON, si la var esta vacia se omite y no se envia
+	Code string				`json:"code,omitempty"`				// ",omitempty" sirve para que al pasar el struct a
+	RefreshToken string		`json:"refresh_token,omitempty"`	// JSON, si la var esta vacia se omite y no se
+	RedirectUri string 		`json:"redirect_uri,omitempty"` 	// toma en cuenta en la conversion
 }
 
 // struct para almacenar la respuesta de MeLi
@@ -39,8 +42,10 @@ type TokenResp struct {
 
 
 func GetCode(c *gin.Context){
+
 	// obtenemos el codigo de intercambio y nos aseguramos de que no este vacio
 	code = c.Query("code")
+
 	if code == "" {
 		c.String(400, "HTTP 400 Missing param code")
 		return
@@ -49,12 +54,13 @@ func GetCode(c *gin.Context){
 	// mostramos la pagina de home
 	api_front.HomePage(c)
 
-	// llamamos a la funcion para obtener el token por primera vez
+	// llamamos a la funcion para obtener el token por "primera vez"
 	tokenRequest(true)
 }
 
 func tokenRequest( firstChange bool ) {
 
+	// pedimos los datos para crear el body que sera enviado a MeLi
 	b, err := json.Marshal(bodyToken( firstChange ))
 
 	// comprobamos que no haya un error en la conversion
@@ -62,8 +68,6 @@ func tokenRequest( firstChange bool ) {
 		fmt.Println(err)
 		return
 	}
-
-	fmt.Println(string(b))
 
 	// hacemos el post del body
 	resp, err := http.Post("https://api.mercadolibre.com/oauth/token",
@@ -80,12 +84,9 @@ func tokenRequest( firstChange bool ) {
 	// leemos la respuesta de MeLi
 	data, err := ioutil.ReadAll(resp.Body)
 
-	fmt.Println(string(data))
-
 	// decodificamos la respuesta y la almacenamos en una tokenResp
 	var tokenResp TokenResp
 	json.Unmarshal(data, &tokenResp)
-	fmt.Printf("%+v\n", tokenResp)
 
 	//extraemos el access token
 	AccessToken = tokenResp.AccessToken
@@ -93,11 +94,14 @@ func tokenRequest( firstChange bool ) {
 	//extraemos el refresh token
 	code=tokenResp.RefreshToken
 
-	fmt.Printf(AccessToken)
+	// Guardamos el nuevo Token y el nuevo
+	// Refresh Token en el Json (luego se debera guardar en una base de datos)
+	SaveToken(tokenResp.UserId, AccessToken, code)
 }
 
 func bodyToken( firstChange bool ) Token {
 
+	// si es la primera vez que se pide el token
 	if(firstChange) {
 		return Token{	GrantType: "authorization_code",
 						ClientId: 6719038448258240,
@@ -106,10 +110,11 @@ func bodyToken( firstChange bool ) Token {
 						RedirectUri: url}
 	}
 
-	return Token{	GrantType: "refresh_code",
+	// si es una peticion de refresh token
+	return Token{	GrantType: "refresh_token",
 					ClientId: 6719038448258240,
 					ClientSecret: "qmxiwj6zMUkNyWs1YzdOHkuCkkquJfVw",
-					Code: code}
+					RefreshToken: code}
 
 }
 
