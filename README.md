@@ -40,13 +40,10 @@ Como utilizar el paquete:
 
 2. Entrar en la dirección http://localhost:80/webtest y hacer click en Autorizar API
 
-   ![image-20201112203723937](C:\Users\feder\AppData\Roaming\Typora\typora-user-images\image-20201112203723937.png)
-
 3. Iniciar sesión con el usuario Vendedor y dar autorización (basta con solo iniciar sesión ya que el usuario vendedor ya ha sido verificado con anterioridad)
 
 4. luego de el paso anterior se lo redireccionará a http://localhost:80/webtest/home.html aquí tendrá una lista de todas las funciones disponibles, solo elija una de ellas y obtendrá su resultado 
 
-   ![image-20201112203632056](C:\Users\feder\AppData\Roaming\Typora\typora-user-images\image-20201112203632056.png)
 
    NOTA: en caso de que desee publicar un producto, necesitara rellenar la información del formulario primero 
 
