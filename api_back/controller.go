@@ -1,6 +1,8 @@
 package api_back
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 )
@@ -24,5 +26,17 @@ func openJson(filename string) string {
 	}
 
 	return  string(jsonData)
+}
+
+func showResp( data []byte) string {
+	var viewReq bytes.Buffer
+
+	err := json.Indent(&viewReq, data, "", "\t")
+
+	if err != nil {
+		fmt.Errorf("Error: ",err.Error())
+		return ""
+	}
+	return string(viewReq.Bytes())
 }
 

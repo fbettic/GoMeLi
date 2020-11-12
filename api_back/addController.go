@@ -2,7 +2,6 @@ package api_back
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/sjson"
@@ -22,8 +21,12 @@ func AddItem(c*gin.Context) {
 	//**************************************************************
 
 	fmt.Println(c.PostForm("title"))
-	value, _ := sjson.Set(jsonData, "title", c.PostForm("title"))
+	value, err := sjson.Set(jsonData, "title", c.PostForm("title"))
 
+	if err != nil {
+		fmt.Errorf("Error: ",err.Error())
+		return
+	}
 
 	// convertimos la variable value (string con el json modificado con los datos del front)
 	// a un array de bytes para luego realizar el metodo post
@@ -37,7 +40,7 @@ func AddItem(c*gin.Context) {
 		bytes.NewBuffer(b))
 
 	if err != nil {
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Errorf("Error: %v",err.Error())
 		return
 	}
 
@@ -52,14 +55,8 @@ func AddItem(c*gin.Context) {
 		return
 	}
 
-	var viewReq bytes.Buffer
-	err = json.Indent(&viewReq, data, "", "\t")
-
-	if err != nil {
-		fmt.Errorf("Error: ",err.Error())
-		return
-	}
+	viewReq := showResp(data)
 
 	// le informamos al cliente que el producto ha sido publicado con exito
-	c.String(http.StatusOK, "Successfully published product\n \"Meli Response:\"\n %+v", string(viewReq.Bytes()))
+	c.String(http.StatusOK, "Successfully published product\n \"meli_response\":\n %+v", viewReq)
 }

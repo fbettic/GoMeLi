@@ -96,6 +96,8 @@ func tokenRequest( firstChange bool ) {
 
 	// Guardamos el nuevo Token y el nuevo
 	// Refresh Token en el Json (luego se debera guardar en una base de datos)
+	fmt.Println(string(data))
+
 	SaveToken(tokenResp.UserId, AccessToken, code)
 }
 

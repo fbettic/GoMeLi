@@ -1,7 +1,6 @@
 package api_back
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,16 +48,9 @@ func ItemList(c*gin.Context)  {
 	data,_ := json.Marshal(itemList)
 
 	// Solo para motrar bien los datos
-	var viewReq bytes.Buffer
-	err = json.Indent(&viewReq, data, "", "\t")
-
-	if err != nil {
-		fmt.Errorf("Error: ",err.Error())
-		return
-	}
-
+	viewReq := showResp(data)
 	// le informamos al cliente que el producto ha sido publicado con exito
-	c.String(http.StatusOK, "{\"Meli Response:\"\n %+v}", string(viewReq.Bytes()))
+	c.String(http.StatusOK, "{\n\"item_list\":\n %+v}", viewReq)
 }
 
 // esta funcion obtiene todos los ID de los items del vendedor

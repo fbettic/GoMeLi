@@ -47,14 +47,16 @@ func ReadUserList() {
 // se busca el usuario en la lista (luego sera una peticion a la base de datos)
 func findUser(id int) (int,error) {
 
-	for i:=0; i<len(userList.UserList); i++ {
+	if id != 0 {
+		for i:=0; i<len(userList.UserList); i++ {
 
-		if userList.UserList[i].Id == id{
-			return i, nil
+			if userList.UserList[i].Id == id{
+				return i, nil
 
+			}
 		}
 	}
-	return -1, errors.New("Usuario no encontrado")
+	return -1, errors.New("User not found or invalid id")
 }
 
 // se guarda el nuevo token y el nuevo refresh token
@@ -71,12 +73,22 @@ func SaveToken(id int, token string, refreshToken string) error{
 	userList.UserList[userPos].RefreshToken = refreshToken
 	userList.UserList[userPos].AccessToken = token
 
+	updateUserList()
+
+	// se cargan los nuevos datos en el usuario que se esta utilizando
+	loadUserDataAt(userPos)
+
+	return nil
+}
+
+// actualiza el archivo json
+func updateUserList()  {
+
 	b, err := json.Marshal(userList)
 
 	if err != nil {
 		fmt.Println(err)
 		fmt.Errorf("Error: ",err.Error())
-		return err
 	}
 
 	// se actualiza el json de la lista de usuarios
@@ -85,14 +97,10 @@ func SaveToken(id int, token string, refreshToken string) error{
 	if err != nil {
 		fmt.Println(err)
 		fmt.Errorf("Error: ",err.Error())
-		return err
 	}
 
-	// se cargan los nuevos datos en el usuario que se esta utilizando
-	loadUserDataAt(userPos)
-
-	return nil
 }
+
 
 // se busca el usuario que queremos cargar en la lista de usuarios
 func LoadUserData(id int) error{
