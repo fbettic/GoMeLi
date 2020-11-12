@@ -16,3 +16,7 @@ func HomePage( c * gin.Context) {
 func NewProductPage( c * gin.Context) {
 	c.HTML(http.StatusOK, "newproduct.html", nil)
 }
+
+func ProductListPage( c * gin.Context) {
+	c.HTML(http.StatusOK, "productlist.html", nil)
+}

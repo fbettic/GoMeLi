@@ -20,7 +20,11 @@ func Router(){
 	//***************** BACK *****************************
 	r.GET("/webtest/oauth", api_back.GetCode)
 	r.POST("/webtest/additem", api_back.AddItem)
+	r.GET("/webtest/itemlist", api_back.ItemList)
+	r.GET("/webtest/soldlist", api_back.SoldList)
 
+	api_back.ReadUserList()
+	api_back.LoadUserData(666272328)
 
 	r.Run(":80")
 }
