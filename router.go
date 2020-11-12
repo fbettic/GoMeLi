@@ -22,6 +22,7 @@ func Router(){
 	r.POST("/webtest/additem", api_back.AddItem)
 	r.GET("/webtest/itemlist", api_back.ItemList)
 	r.GET("/webtest/soldlist", api_back.SoldList)
+	r.GET("/webtest/questlist", api_back.QuestList)
 
 	api_back.ReadUserList()
 	api_back.LoadUserData(666272328)
