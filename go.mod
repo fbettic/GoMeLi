@@ -1,3 +1,3 @@
-module github/Chino976/GoMeLi
+module GoMeLi
 
 go 1.14

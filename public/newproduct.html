@@ -10,12 +10,6 @@
 		<form action="http://localhost:80/webtest/additem" method="post">
 
 			<p>Nombre del producto: <input type="text" name="title"></p>
-
-			<p>Categoria del Producto: <select name="categories">
-				<option value="MLA1055">Celulares Y Teléfonos</option>
-				<option value="MLA3794">Computacion</option>
-				<option value="MLA434917">Instrumentos Musicales</option>
-			</select></p>
 			
 			<p>Precio: <input type="number" name="price"></p>
 			<p>Stock: <input type="number" name="available_quantity"></p>
@@ -24,26 +18,6 @@
 				<option value="new">Nuevo</option>
 				<option value="used">Usado</option>
 			</select></p>
-
-			<p>Descripcion del producto:</p>
-			<textarea name="description" rows="10" cols="50">Escribe una descripcion de tu producto</textarea>
-			
-			<p>Video (link youtube): <input type="text" name="video_id"></p>
-
-			<p>Marca del producto: <input type="text" name="attributes_brand"></p>
-			<p>Model del producto: <input type="text" name="attributes_model"></p>
-
-			<p>Tipo de codigo de identificacion: <select name="attributes_gtin">
-				<option value="EAN">EAN</option>
-				<option value="UPC">UPC</option>
-				<option value="JAN">JAN</option>
-				<option value="GTIN14">GTIN14</option>
-				<option value="ISBN">ISBN</option>
-				<option value="ISBN10">ISBN10</option>
-				<option value="ISBN13">ISBN13</option>
-				</select></p>
-			
-			<p>Codigo de identificacion: <input type="text" name="attributes_gtin_code"></p>
 
 			<p><input type="submit" value="Enviar datos"></p>
 	

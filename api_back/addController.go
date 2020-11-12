@@ -22,6 +22,9 @@ func AddItem(c*gin.Context) {
 
 	fmt.Println(c.PostForm("title"))
 	value, err := sjson.Set(jsonData, "title", c.PostForm("title"))
+	value, err = sjson.Set(value, "price", c.PostForm("price"))
+	value, err = sjson.Set(value, "available_quantity", c.PostForm("available_quantity"))
+	value, err = sjson.Set(value, "condition", c.PostForm("condition"))
 
 	if err != nil {
 		fmt.Errorf("Error: ",err.Error())
