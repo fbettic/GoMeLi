@@ -37,20 +37,20 @@ func ItemList(c*gin.Context)  {
 	idList, err := getItemsID()
 
 	if err != nil{
-		if err == errors.New("token has expired"){
-			c.String(401, "An error has occurred, please try again")
+		if err.Error() == "token has expired" {
+			c.String(401, "Token vencido. Por favor recargar la página")
 		}
 		fmt.Errorf("Error ",err.Error())
+	} else {
+		itemList := getItemsList(idList)
+
+		data,_ := json.Marshal(itemList)
+
+		// Solo para motrar bien los datos
+		viewReq := showResp(data)
+		// le informamos al cliente que el producto ha sido publicado con exito
+		c.String(http.StatusOK, "{\n\"item_list\":\n %+v}", viewReq)
 	}
-
-	itemList := getItemsList(idList)
-
-	data,_ := json.Marshal(itemList)
-
-	// Solo para motrar bien los datos
-	viewReq := showResp(data)
-	// le informamos al cliente que el producto ha sido publicado con exito
-	c.String(http.StatusOK, "{\n\"item_list\":\n %+v}", viewReq)
 }
 
 // esta funcion obtiene todos los ID de los items del vendedor
