@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GoMeLi/api_back"
-	"GoMeLi/api_front"
+	"github.com/Chino976/GoMeLi/api_back"
+	"github.com/Chino976/GoMeLi/api_front"
 	"github.com/gin-gonic/gin"
 )
 

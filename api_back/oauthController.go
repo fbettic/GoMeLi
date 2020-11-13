@@ -1,11 +1,10 @@
 package api_back
 
 import (
-	"GoMeLi/api_front"
-	//"GoMeLi/api_front"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/Chino976/GoMeLi/api_front"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
