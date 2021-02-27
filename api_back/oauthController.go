@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/Chino976/GoMeLi/api_front"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
@@ -17,7 +16,7 @@ var code string
 var AccessToken string
 
 // URL puesta en la app de MeLi
-var url string = "http://localhost:8080/webtest/oauth"
+var url string = "http://localhost:8080/gomeli/oauth"
 
 // struct que se enviara como body para obtener el Access token
 type Token struct {
@@ -50,8 +49,8 @@ func GetCode(c *gin.Context){
 		return
 	}
 
-	// mostramos la pagina de home
-	api_front.HomePage(c)
+	// redireccionamos a la pagina de home de nuestro front
+	c.Redirect(302, "http://localhost/gomeli/home.html")
 
 	// llamamos a la funcion para obtener el token por "primera vez"
 	tokenRequest(true)
@@ -74,7 +73,7 @@ func tokenRequest( firstChange bool ) {
 								bytes.NewBuffer(b))
 
 	if err != nil {
-		fmt.Errorf("Error ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 		return
 	}
 
@@ -103,7 +102,7 @@ func tokenRequest( firstChange bool ) {
 func bodyToken( firstChange bool ) Token {
 
 	// si es la primera vez que se pide el token
-	if(firstChange) {
+	if firstChange {
 		return Token{	GrantType: "authorization_code",
 						ClientId: 6719038448258240,
 						ClientSecret: "qmxiwj6zMUkNyWs1YzdOHkuCkkquJfVw",

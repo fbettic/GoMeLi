@@ -21,6 +21,7 @@ type typeUserList struct {
 	UserList []userData 	`json:"user_list"`
 }
 
+
 type userData struct{
 	Id int					`json:"id"`
 	Nickname string			`json:"nickname"`
@@ -36,8 +37,7 @@ func ReadUserList() {
 	err := json.Unmarshal(userFile, &userList)
 
 	if err != nil{
-		fmt.Println(err)
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 		return
 	}
 
@@ -56,7 +56,7 @@ func findUser(id int) (int,error) {
 			}
 		}
 	}
-	return -1, errors.New("User not found or invalid id")
+	return -1, errors.New("user not found or invalid id")
 }
 
 // se guarda el nuevo token y el nuevo refresh token
@@ -65,8 +65,7 @@ func SaveToken(id int, token string, refreshToken string) error{
 	userPos,err := findUser(id)
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 		return err
 	}
 
@@ -87,16 +86,14 @@ func updateUserList()  {
 	b, err := json.Marshal(userList)
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 	}
 
 	// se actualiza el json de la lista de usuarios
 	err = ioutil.WriteFile("./api_back/json/users.json",b,0644)
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 	}
 
 }
@@ -108,8 +105,7 @@ func LoadUserData(id int) error{
 	userPos, err := findUser(id)
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error: ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 		return err
 	}
 
@@ -122,7 +118,7 @@ func LoadUserData(id int) error{
 func loadUserDataAt(pos int) error{
 
 	if pos > len(userList.UserList){
-		return errors.New("Out of range")
+		return errors.New("out of range")
 	}
 	User = userList.UserList[pos]
 

@@ -1,7 +1,6 @@
 package api_back
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,19 +13,26 @@ import (
 //											STRUCTS
 //***********************************************************************************************
 
-// LISTADO DE ITEMS --------------------------------------------
-type resultsList struct {
-	Results []string 		`json:"results"`
+// ESTRUCTURA PARA ENVIAR AL HOME
+type HomeStruct struct {
+	SoldItemList []soldItem 		`json:"sold_item_list"`
+	ItemList []itemData				`json:"item_list"`
+	QuestList []UnansweredQuest		`json:"quest_list"`
 }
 
-type itemDataReq struct{
-	Title string			`json:"title"`
-	AvailableQuantity int	`json:"available_quantity"`
-	Price float64			`json:"price"`
-	Pictures []pictures		`json:"pictures"`
+// LISTADO DE ITEMS --------------------------------------------
+type itemsIdList struct {
+	Results []string 				`json:"results"`
 }
-type pictures struct {
-	Url string				`json:"url"`
+
+// esta estructura guarda la respuesta de meli
+type itemDataReq struct{
+	Title string					`json:"title"`
+	AvailableQuantity int			`json:"available_quantity"`
+	Price float64					`json:"price"`
+	Pictures []struct{
+		Url string					`json:"url"`
+	}								`json:"pictures"`
 }
 
 // Esta estructura guarda los datos de los items
@@ -39,46 +45,47 @@ type itemData struct {
 
 
 // LISTADO PREGUNTAS -------------------------------------------
-type QuestsResp struct {
-	Questions []question 	`json:"questions"`
-	Total int				`json:"total"`
+
+// esta estructura guarda la respuesta de meli
+type QuestsReq struct {
+	Questions []struct{
+		DataCreated string			`json:"data_created"`
+		ItemId string				`json:"item_id"`
+		Text string					`json:"text"`
+		Status string				`json:"status"`
+	} 								`json:"questions"`
+	Total int						`json:"total"`
 }
 
-type question struct {
-	DataCreated string		`json:"data_created"`
-	ItemId string			`json:"item_id"`
-	Text string				`json:"text"`
-	Status string			`json:"status"`
+// Esta estructura guarda los datos de los items
+type UnansweredQuest struct{
+	ItemId string					`json:"item_id"`
+	Text string						`json:"text"`
 }
+
 
 // LISTADO DE PRODUCTOS VENDIDOS -------------------------------
-type soldResp struct {
-	Results []result		`json:"results"`
+
+// esta estructura guarda la respuesta de meli
+type soldReq struct {
+	Results []struct{
+		Payments []struct{
+			Reason string			`json:"reason"`
+			TotalPaidAmount float64	`json:"total_paid_amount"`
+			DateApproved string		`json:"date_approved"`
+			Id int					`json:"id"`
+		}							`json:"payments"`
+		OrderItems []struct{
+			Item struct{
+				Id string			`json:"id"`
+			}						`json:"item"`
+			Quantity int			`json:"quantity"`
+			UnitPrice float64		`json:"unit_price"`
+		}							`json:"order_items"`
+	}								`json:"results"`
 }
 
-type result struct {
-	Payments []payment		`json:"payments"`
-	OrderItems []OrderItem	`json:"order_items"`
-}
-
-type payment struct {
-	Reason string			`json:"reason"`
-	TotalPaidAmount float64	`json:"total_paid_amount"`
-	DateApproved string		`json:"date_approved"`
-	Id int					`json:"id"`
-
-}
-
-type OrderItem struct {
-	Item Item				`json:"item"`
-	Quantity int			`json:"quantity"`
-	UnitPrice float64		`json:"unit_price"`
-}
-
-type Item struct {
-	Id string				`json:"id"`
-}
-
+// Esta estructura guarda los datos de los items
 type soldItem struct {
 	Item string
 	ItemId string
@@ -114,28 +121,28 @@ func openJson(filename string) string {
 	return  string(jsonData)
 }
 
-func showResp( data []byte) string {
-	var viewReq bytes.Buffer
-
-	err := json.Indent(&viewReq, data, "", "\t")
-
-	if err != nil {
-		fmt.Errorf("Error: ",err.Error())
-		return ""
-	}
-	return string(viewReq.Bytes())
-}
-
+//-------------------------Funciones De ItemList -------------------------
 // esta funcion obtiene todos los ID de los items del vendedor
 func getItemsID() ([]string, error) {
 
-	// se envia la peticion get para obtener los datos del vendedor
-	resp, err := http.Get("https://api.mercadolibre.com/users/" +
+	// ***************** Request de items *********************
+	// 1. creamos la request
+	req, _ := http.NewRequest(http.MethodGet, "https://api.mercadolibre.com/users/" +
 		strconv.Itoa(User.Id) +
-		"/items/search?&access_token=" +
-		User.AccessToken)
+		"/items/search", nil)
+
+	// 2. Añadimos el access token al header
+	req.Header.Add("Authorization","Bearer " + User.AccessToken)
+
+	// 3. creamos el cliente
+	client := &http.Client{}
+
+	// 4. realizamos al consulta
+	resp, err := client.Do(req)
+	//*********************************************************
 
 	if err != nil {
+		// si se presento un error devolvemos un string vacio y el error obtenido
 		return make([]string,0), err
 	}
 
@@ -146,56 +153,55 @@ func getItemsID() ([]string, error) {
 	data, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
+		// si se presento un error devolvemos un string vacio y el error obtenido
 		return make([]string,0), err
 	}
 
-	// Se verifica que el token no haya expirado
-	// Si ha expirado se realiza un refresh token
-	if string(data) == tokenError() {
-		fmt.Println("Error hay que actualizar token, porfavor intente nuevamente")
-		tokenRequest(false)
-		return make([]string, 0), errors.New("token has expired")
-	}
-
 	// Se guardan los id de los productos
-	var resultAux resultsList
-	err = json.Unmarshal(data, &resultAux)
+	var result itemsIdList
+	err = json.Unmarshal(data, &result)
+
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error ",err.Error())
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
 		return make([]string,0), err
 	}
 
 	// se devuelve la lista de IDs
-	return resultAux.Results, nil
+	return result.Results, nil
 }
 
 // Se piden los datos de cada uno de los ID y se crea la lista de productos
-func getItemsList( idList []string) []itemData{
+func getItemsList( idList []string) ([]itemData, error){
 
 	var itemList []itemData
+
 	for i:=0; i < len(idList); i++ {
 
-		// 1. Pedimos los datos del item pasando su id a getItemDataReq()
-		// 2. Transformamos la estructura obtenida de MeLi a nuestro Propio struct con toItemData
-		// 3. Agregamos la estructura ya convertida en array itemData
-		itemList = append(itemList, toItemData(getItemDataReq(idList[i])))
+		item,err := getItemData(idList[i])
+
+		if err != nil {
+			return []itemData{}, errors.New("error loading item data")
+		}
+		// 1. Pedimos los datos del item pasando su id a getItemDataReq() y ademas
+		//    Transformamos la estructura obtenida de MeLi a nuestro Propio struct
+		// 2. Agregamos la estructura ya convertida en array itemData
+		itemList = append(itemList, item)
 	}
 
 	// Devolvemos la lista de productos
-	return itemList
+	return itemList, nil
 }
 
 // se obtienen los datos del id que especifiquemos
-func getItemDataReq( itemID string ) itemDataReq{
+func getItemData( itemID string ) (itemData,error) {
 
 	// Pedimos los datos del item
 	resp, err := http.Get("https://api.mercadolibre.com/items/" + itemID)
 
 	if err != nil {
-		fmt.Errorf("Error ",err.Error())
-		return itemDataReq{}
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
+		return itemData{}, err
 	}
 
 	defer resp.Body.Close()
@@ -204,35 +210,32 @@ func getItemDataReq( itemID string ) itemDataReq{
 	data, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Errorf("Error ",err.Error())
-		return itemDataReq{}
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
+		return itemData{}, err
 	}
 
-	var resultAux itemDataReq
-	err = json.Unmarshal(data, &resultAux) //guardamos los datos de MeLi en un struct
+	var result itemDataReq // creamos la estructura donde se guardara la respuesta de meli
+	err = json.Unmarshal(data, &result) //guardamos los datos de MeLi en un struct
 
 	if err != nil {
-		fmt.Println(err)
-		fmt.Errorf("Error ",err.Error())
-		return itemDataReq{}
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
+		return itemData{},err
 	}
 
-	// se devuelve el struct con los datos
-	return resultAux
+	// convertimos datos de la respuesta de MeLi
+	// a nuestro propio struct de datos para facilitar su manejo
+	item := itemData{ result.Title,
+		result.AvailableQuantity,
+		result.Price,
+		result.Pictures[0].Url}
+
+	// se devuelve el struct con los datos del item
+	return item, nil
 }
+//-------------------------------------------------------------------
 
-// Se convierten los struct datos de la respuesta de MeLi
-// a nuestro propio struct de datos para facilitar su manejo
-func toItemData(req itemDataReq) itemData{
-
-	item := itemData{ req.Title,
-		req.AvailableQuantity,
-		req.Price,
-		req.Pictures[0].Url}
-	return item
-}
-
-func getSoldResp () (soldResp,error){
+//-------------------------- funciones de SoldList --------------------------
+func getSoldItems () ([]soldItem,error){
 
 	resp, err := http.Get("https://api.mercadolibre.com/orders/search?seller=" +
 		strconv.Itoa(User.Id) +
@@ -240,7 +243,7 @@ func getSoldResp () (soldResp,error){
 		User.AccessToken)
 
 	if err != nil {
-		return soldResp{}, err
+		return []soldItem{}, err
 	}
 
 	defer resp.Body.Close()
@@ -248,41 +251,34 @@ func getSoldResp () (soldResp,error){
 	data, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		return soldResp{},err
+		fmt.Println(fmt.Errorf("error %v",err.Error()))
+		return []soldItem{},err
 	}
 
-	if string(data) == tokenError() {
-		fmt.Println("Error hay que actualizar token, porfavor intente nuevamente")
-		tokenRequest(false)
-		return soldResp{}, err
-	}
+	var respAux soldReq
 
-	var resultAux soldResp
-
-	err = json.Unmarshal(data, &resultAux)
+	err = json.Unmarshal(data, &respAux)
 
 	if err != nil {
-		return soldResp{}, err
+		return []soldItem{}, err
 	}
 
-	return resultAux, nil
-}
-
-func toSoldItems(resp soldResp) []soldItem {
 	var soldItemList []soldItem
-	for i := 0; i< len(resp.Results); i++ {
 
-		aux := soldItem{resp.Results[i].Payments[0].Reason,
-			resp.Results[i].OrderItems[0].Item.Id,
-			resp.Results[i].OrderItems[0].UnitPrice,
-			resp.Results[i].OrderItems[0].Quantity,
-			resp.Results[i].Payments[0].TotalPaidAmount,
-			resp.Results[i].Payments[0].Id,
-			resp.Results[i].Payments[0].DateApproved,
+	for i := 0; i< len(respAux.Results); i++ {
+
+		aux := soldItem{respAux.Results[i].Payments[0].Reason,
+			respAux.Results[i].OrderItems[0].Item.Id,
+			respAux.Results[i].OrderItems[0].UnitPrice,
+			respAux.Results[i].OrderItems[0].Quantity,
+			respAux.Results[i].Payments[0].TotalPaidAmount,
+			respAux.Results[i].Payments[0].Id,
+			respAux.Results[i].Payments[0].DateApproved,
 		}
 
 		soldItemList = append(soldItemList, aux)
 	}
 
-	return soldItemList
+	return soldItemList,nil
 }
+//---------------------------------------------------------------------
