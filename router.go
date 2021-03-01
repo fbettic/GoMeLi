@@ -12,11 +12,10 @@ func Router(){
 	//***************** BACK *****************************
 	r.GET(	"/gomeli/oauth", api_back.GetCode)
 	r.GET(	"/gomeli/home", api_back.Home)
+	r.GET(	"/gomeli/export",api_back.Export)
 	r.POST(	"/gomeli/additem", api_back.AddItem)
 	r.POST(	"/gomeli/answer", api_back.Answer)
 
-	api_back.ReadUserList()
-	api_back.LoadUserData(666272328)
 
 	r.Run(":8080")
 }

@@ -3,8 +3,6 @@ package api_back
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	_ "errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/sjson"
@@ -13,8 +11,21 @@ import (
 	"strconv"
 )
 
+
+
 // Funcion para publicar items
 func AddItem(c*gin.Context) {
+
+	id := c.Query("id")
+
+	user,err := testToken(id)
+
+	if err != nil {
+		fmt.Println(err)
+		response := MessageStruct{"Error al tratar de obtener los datos de usuario", 401}
+		c.JSON(401,response)
+		return
+	}
 
 	// Abrimos el archivo .json que contiene todos los datos que MeLi requiere para publicar un item
 	// (una especie de platilla, para evitar el exeso de structs)
@@ -42,12 +53,14 @@ func AddItem(c*gin.Context) {
 	fmt.Println(string(b))
 
 	// realizamos el post de los datos a mercado libre
-	resp, err := http.Post("https://api.mercadolibre.com/items?access_token=" + AccessToken,
+	resp, err := http.Post("https://api.mercadolibre.com/items?access_token=" + user.AccessToken,
 		"application/json; application/x-www-form-urlencoded",
 		bytes.NewBuffer(b))
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
+		response := MessageStruct{"Error al enviar los datos del producto", 500}
+		c.JSON(500,response)
 		return
 	}
 
@@ -61,41 +74,50 @@ func AddItem(c*gin.Context) {
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
-		c.String(http.StatusInternalServerError,"An error has occurred, please try again" )
+		response := MessageStruct{"Error al leer la respuesta de Mercado Libre", 500}
+		c.JSON(500, response)
 		return
 	}
-
-	c.String(http.StatusOK, "Poducto cargado con exito")
+	response := MessageStruct{"Producto cargado con exito", 200}
+	c.JSON(200, response)
 }
 
 // Obtener la lista de productos
-func ItemList() ([]itemData,error){
-	idList, err := getItemsID()
+func ItemList(user ReqUserData, chItemsList chan []itemData){
+
+	idList, err := getItemsID(user)
+
+	fmt.Println(user)
+	fmt.Println(idList)
+	fmt.Println(err)
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
-		return []itemData{},errors.New("error al cargar los ID de productos")
+		chItemsList <- []itemData{}
+		return
 	}
 
 	itemsList, err := getItemsList(idList)
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
-		return []itemData{},errors.New("error al cargar los datos de productos")
+		chItemsList <- []itemData{}
+		return
 	}
-	return itemsList,nil
+	chItemsList <- itemsList
 }
 
 // obtener listado de preguntas
-func QuestList () ([]UnansweredQuest,error){
+func QuestList (user ReqUserData, chQuestList chan []UnansweredQuest){
 
 	resp, err := http.Get("https://api.mercadolibre.com/questions/search?seller_id=" +
-		strconv.Itoa(User.Id) + "&access_token=" + User.AccessToken +
+		strconv.Itoa(user.IdMeli) + "&access_token=" + user.AccessToken +
 		"&status=UNANSWERED&sort_fields=item_id,date_created&sort_type=ASC")
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err ))
-		return []UnansweredQuest{}, errors.New("error al pedir las preguntas")
+		chQuestList <- []UnansweredQuest{}
+		return
 	}
 
 	defer resp.Body.Close()
@@ -104,7 +126,8 @@ func QuestList () ([]UnansweredQuest,error){
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v", err.Error()))
-		return []UnansweredQuest{}, errors.New("error al leer las preguntas")
+		chQuestList <- []UnansweredQuest{}
+		return
 	}
 
 	var respAux QuestsReq
@@ -115,34 +138,51 @@ func QuestList () ([]UnansweredQuest,error){
 
 	for i:=0; i<len(respAux.Questions); i++{
 		aux := UnansweredQuest{
+			"",
 			respAux.Questions[i].ItemId,
+			respAux.Questions[i].Id,
 			respAux.Questions[i].Text,
 		}
 		questList = append(questList,aux)
 	}
 
-	return questList,nil
+	chQuestList <- questList
 }
 
 // obtener listado de productos vendidos
-func SoldList() ([]soldItem,error){
+func SoldList(user ReqUserData,chSoldList chan []soldItem){
 
-	soldItemsList, err := getSoldItems()
 
+	soldItemsList, err := getSoldItems(user)
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
-		return []soldItem{},errors.New("error al cargar la lista de productos vendidos")
+		chSoldList <- []soldItem{}
+		return
 	}
 
-	return soldItemsList,nil
+
+	chSoldList <- soldItemsList
+
 }
 
 // responder preguntas
 func Answer(c*gin.Context){
 
+	id := c.Query("id")
+
+	user,err := testToken(id)
+
+	if err != nil {
+		fmt.Println(err)
+		response := MessageStruct{"Error al tratar de obtener los datos del usuario", 401}
+		c.JSON(401, response)
+		return
+	}
+
+
 	// obtenemos los datos del formulario que recibimos
-	question := c.PostForm("question")
+	question := c.Query("idq")
 	answer :=  c.PostForm("answer")
 
 	// creamos un string con los datos recibidos
@@ -154,50 +194,109 @@ func Answer(c*gin.Context){
 	// creamos la request con su respectivo header
 	req, _ := http.NewRequest(http.MethodPost, "https://api.mercadolibre.com/answers",bytes.NewBuffer(b))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization","Bearer " + User.AccessToken)
+	req.Header.Add("Authorization","Bearer " + user.AccessToken)
 
 	// realizamos la request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
 	if err != nil {
-		println("error al obtener la respuesta")
+		response := MessageStruct{"Error al tratar de enviar la respuesta", 500}
+		c.JSON(500, response)
 	}
 
 	// cerramos el body de la respuesta
 	defer resp.Body.Close()
 
-	// leemos la respuesta de MeLi, llegado a esta linea la respuesta ya fue posteada
-	// esto es solo un mensaje de confirmacion de posteo
-	data, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		println("error al leer la respuesta")
-	}
-
-	println(string(data))
+	response := MessageStruct{"Respuesta enviada con exito", 200}
+	c.JSON(200, response)
 }
 
+// envia lista de items, de preguntas, y de items vendidios
 func Home(c*gin.Context) {
-	soldItemList,err := SoldList()
+
+	id := c.Query("id")
+
+	user,err := testToken(id)
+
 	if err != nil {
 		fmt.Println(err)
+		response := MessageStruct{"Error al tratar de obtener los datos del usuario", 401}
+		c.JSON(401, response)
 		return
 	}
 
-	itemsList,err := ItemList()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	chSoldItemList := make(chan []soldItem)
+	chItemsList := make(chan []itemData)
+	chQuestList := make(chan []UnansweredQuest)
 
-	questList,err := QuestList()
-	if err != nil {
-		fmt.Println(err)
-		return
+	go SoldList(user, chSoldItemList )
+	go ItemList(user, chItemsList)
+	go QuestList(user, chQuestList)
+
+	soldItemList := <- chSoldItemList
+	itemsList := <- chItemsList
+	questList := <- chQuestList
+
+	for i:=0; i<len(questList); i++{
+		for j:=0; j<len(itemsList); j++{
+			if questList[i].ItemId == itemsList[j].Id {
+				questList[i].ItemTitle = itemsList[j].Title
+			}
+		}
 	}
 
 	homeResp := HomeStruct{soldItemList, itemsList, questList}
 
+
 	c.JSON(200,homeResp)
+}
+
+func Export(c*gin.Context) {
+
+	id := c.Query("id")
+
+	user,err := testToken(id)
+
+	if err != nil {
+		fmt.Println(err)
+		response := MessageStruct{"Error al tratar de obtener los datos del usuario", 401}
+		c.JSON(401,response)
+		return
+	}
+
+	chItemsList := make(chan []itemData)
+	go ItemList(user, chItemsList)
+
+	itemsList := <- chItemsList
+
+	itemsListEx := ""
+
+	for i:=0; i<len(itemsList); i++{
+
+		aux := "('" + itemsList[i].Title + "'," +
+				strconv.Itoa(itemsList[i].Quantity) +
+				"," + fmt.Sprintf("%.2f",itemsList[i].Price) +
+				"," + id + ")"
+
+		if i==0{
+			itemsListEx = aux
+		}else{
+			itemsListEx = itemsListEx + "," + aux
+		}
+	}
+
+	itemsListEx = itemsListEx + ";"
+	fmt.Println(itemsListEx)
+	exportarProductos(itemsListEx)
+
+	if err != nil {
+		fmt.Println(err)
+		response := MessageStruct{"Error al intentar exportar los datos", 500}
+		c.JSON(500,response)
+		return
+	}
+
+	response := MessageStruct{"Datos exportados con exito", 200}
+	c.JSON(200, response)
 }

@@ -9,11 +9,6 @@ import (
 	"net/http"
 )
 
-// Esta variable contendra el codigo para obtener el accses token y posteriormente el refresh_token
-var code string
-
-// se almacenara el access token para las posteriores transacciones
-var AccessToken string
 
 // URL puesta en la app de MeLi
 var url string = "http://localhost:8080/gomeli/oauth"
@@ -42,7 +37,7 @@ type TokenResp struct {
 func GetCode(c *gin.Context){
 
 	// obtenemos el codigo de intercambio y nos aseguramos de que no este vacio
-	code = c.Query("code")
+	code := c.Query("code")
 
 	if code == "" {
 		c.String(400, "HTTP 400 Missing param code")
@@ -53,13 +48,13 @@ func GetCode(c *gin.Context){
 	c.Redirect(302, "http://localhost/gomeli/home.html")
 
 	// llamamos a la funcion para obtener el token por "primera vez"
-	tokenRequest(true)
+	tokenRequest(code,true)
 }
 
-func tokenRequest( firstChange bool ) {
+func tokenRequest( code string, firstChange bool ) {
 
 	// pedimos los datos para crear el body que sera enviado a MeLi
-	b, err := json.Marshal(bodyToken( firstChange ))
+	b, err := json.Marshal(bodyToken( code, firstChange ))
 
 	// comprobamos que no haya un error en la conversion
 	if err != nil {
@@ -84,22 +79,22 @@ func tokenRequest( firstChange bool ) {
 
 	// decodificamos la respuesta y la almacenamos en una tokenResp
 	var tokenResp TokenResp
+
 	json.Unmarshal(data, &tokenResp)
 
-	//extraemos el access token
-	AccessToken = tokenResp.AccessToken
+	user := ReqUserData{
+		tokenResp.UserId,
+		tokenResp.AccessToken,
+		tokenResp.RefreshToken,
+	}
 
-	//extraemos el refresh token
-	code=tokenResp.RefreshToken
-
-	// Guardamos el nuevo Token y el nuevo
-	// Refresh Token en el Json (luego se debera guardar en una base de datos)
 	fmt.Println(string(data))
 
-	SaveToken(tokenResp.UserId, AccessToken, code)
+	// enviamos los nuevos datos a la base de datos
+	actualizarToken(user)
 }
 
-func bodyToken( firstChange bool ) Token {
+func bodyToken( code string, firstChange bool ) Token {
 
 	// si es la primera vez que se pide el token
 	if firstChange {

@@ -1,6 +1,6 @@
 package api_back
 
-import (
+import  (
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +12,12 @@ import (
 //***********************************************************************************************
 //											STRUCTS
 //***********************************************************************************************
+
+
+type MessageStruct struct {
+	Message string					`json:"message"`
+	Status int 						`json:"status"`
+}
 
 // ESTRUCTURA PARA ENVIAR AL HOME
 type HomeStruct struct {
@@ -27,8 +33,10 @@ type itemsIdList struct {
 
 // esta estructura guarda la respuesta de meli
 type itemDataReq struct{
+	Id string						`json:"id"`
 	Title string					`json:"title"`
-	AvailableQuantity int			`json:"available_quantity"`
+	InitialQuantity int				`json:"initial_quantity"`
+	SoldQuantity int				`json:"sold_quantity"`
 	Price float64					`json:"price"`
 	Pictures []struct{
 		Url string					`json:"url"`
@@ -37,10 +45,11 @@ type itemDataReq struct{
 
 // Esta estructura guarda los datos de los items
 type itemData struct {
-	Title string
-	Quantity int
-	Price float64
-	Picture string
+	Id string						`json:"id"`
+	Title string					`json:"title"`
+	Quantity int					`json:"quantity"`
+	Price float64					`json:"price"`
+	Picture string					`json:"picture"`
 }
 
 
@@ -53,13 +62,16 @@ type QuestsReq struct {
 		ItemId string				`json:"item_id"`
 		Text string					`json:"text"`
 		Status string				`json:"status"`
-	} 								`json:"questions"`
+		Id int 						`json:"id"`
+	}								`json:"questions"`
 	Total int						`json:"total"`
 }
 
 // Esta estructura guarda los datos de los items
 type UnansweredQuest struct{
+	ItemTitle string				`json:"item_title"`
 	ItemId string					`json:"item_id"`
+	Id int							`json:"id"`
 	Text string						`json:"text"`
 }
 
@@ -87,25 +99,20 @@ type soldReq struct {
 
 // Esta estructura guarda los datos de los items
 type soldItem struct {
-	Item string
-	ItemId string
-	UnitPrice float64
-	Quantity int
-	TotalPaidAmount float64
-	TransactionID int
-	TransactionDate string
+	Item string						`json:"item"`
+	ItemId string					`json:"item_id"`
+	UnitPrice float64				`json:"unit_price"`
+	Quantity int					`json:"quantity"`
+	TotalPaidAmount float64			`json:"total_paid_amount"`
+	TransactionID int				`json:"transaction_id"`
+	TransactionDate string			`json:"transaction_date"`
 }
 
 //***********************************************************************************************
 //											FUNCIONES
 //***********************************************************************************************
 
-// Esta funcion se utiliza para identificar si el token a expirado
-// se utiliza comparando el body de cada request, si son iguales entonces el token ha
-// expirado por lo que es necesario realizar un refresh token
-func tokenError () string {
-	return "{\"message\":\"Invalid token\",\"cause\":[],\"error\":\"not_found\",\"status\":401}"
-}
+
 
 // Funcion para abrir los archivos json
 func openJson(filename string) string {
@@ -123,16 +130,16 @@ func openJson(filename string) string {
 
 //-------------------------Funciones De ItemList -------------------------
 // esta funcion obtiene todos los ID de los items del vendedor
-func getItemsID() ([]string, error) {
+func getItemsID(user ReqUserData) ([]string, error) {
 
 	// ***************** Request de items *********************
 	// 1. creamos la request
 	req, _ := http.NewRequest(http.MethodGet, "https://api.mercadolibre.com/users/" +
-		strconv.Itoa(User.Id) +
+		strconv.Itoa(user.IdMeli) +
 		"/items/search", nil)
 
 	// 2. Añadimos el access token al header
-	req.Header.Add("Authorization","Bearer " + User.AccessToken)
+	req.Header.Add("Authorization","Bearer " + user.AccessToken)
 
 	// 3. creamos el cliente
 	client := &http.Client{}
@@ -140,6 +147,7 @@ func getItemsID() ([]string, error) {
 	// 4. realizamos al consulta
 	resp, err := client.Do(req)
 	//*********************************************************
+
 
 	if err != nil {
 		// si se presento un error devolvemos un string vacio y el error obtenido
@@ -176,21 +184,45 @@ func getItemsList( idList []string) ([]itemData, error){
 
 	var itemList []itemData
 
+	var err1 error
+	err1 = nil
+
+	chit := make(chan itemData)
+	cherr := make(chan error)
+
 	for i:=0; i < len(idList); i++ {
 
-		item,err := getItemData(idList[i])
+		go func(chit chan itemData, cherr chan error,stid string){
 
-		if err != nil {
-			return []itemData{}, errors.New("error loading item data")
+			item,err := getItemData(stid)
+
+			if err != nil {
+				chit <- item
+				cherr <- errors.New("error loading item data")
+				return
+			}
+			// 1. Pedimos los datos del item pasando su id a getItemDataReq() y ademas
+			//    Transformamos la estructura obtenida de MeLi a nuestro Propio struct
+			// 2. Agregamos la estructura ya convertida en array itemData
+			chit <- item
+			cherr <- nil
+
+		}(chit,cherr,idList[i])
+
+	}
+
+	for i:=0; i < len(idList); i++ {
+		item := <- chit
+		itemList = append(itemList,item)
+		err := <- cherr
+		if err != nil{
+			err1 = err
 		}
-		// 1. Pedimos los datos del item pasando su id a getItemDataReq() y ademas
-		//    Transformamos la estructura obtenida de MeLi a nuestro Propio struct
-		// 2. Agregamos la estructura ya convertida en array itemData
-		itemList = append(itemList, item)
 	}
 
 	// Devolvemos la lista de productos
-	return itemList, nil
+	return itemList, err1
+
 }
 
 // se obtienen los datos del id que especifiquemos
@@ -224,8 +256,10 @@ func getItemData( itemID string ) (itemData,error) {
 
 	// convertimos datos de la respuesta de MeLi
 	// a nuestro propio struct de datos para facilitar su manejo
-	item := itemData{ result.Title,
-		result.AvailableQuantity,
+	item := itemData{ 
+		result.Id,
+		result.Title,
+		result.InitialQuantity - result.SoldQuantity,
 		result.Price,
 		result.Pictures[0].Url}
 
@@ -235,12 +269,12 @@ func getItemData( itemID string ) (itemData,error) {
 //-------------------------------------------------------------------
 
 //-------------------------- funciones de SoldList --------------------------
-func getSoldItems () ([]soldItem,error){
+func getSoldItems (user ReqUserData) ([]soldItem,error){
 
 	resp, err := http.Get("https://api.mercadolibre.com/orders/search?seller=" +
-		strconv.Itoa(User.Id) +
+		strconv.Itoa(user.IdMeli) +
 		"&order.status=paid&access_token=" +
-		User.AccessToken)
+		user.AccessToken)
 
 	if err != nil {
 		return []soldItem{}, err
@@ -282,3 +316,52 @@ func getSoldItems () ([]soldItem,error){
 	return soldItemList,nil
 }
 //---------------------------------------------------------------------
+
+//-------------------- testea el tocken para saber si esta vencido ----------------------------
+func testToken(id string) (ReqUserData,error){
+
+	user,err := obtenerDatosUsuario(id)
+
+	if err != nil {
+		fmt.Println(err)
+		return ReqUserData{},errors.New("error al cargar los datos de usuario 1")
+	}
+
+	tokenError := "{\"message\":\"invalid_token\",\"error\":\"not_found\",\"status\":401,\"cause\":[]}"
+
+	req, _ := http.NewRequest(http.MethodGet, "https://api.mercadolibre.com/users/" +
+		strconv.Itoa(user.IdMeli) +
+		"?attributes=status", nil)
+
+	// 2. Añadimos el access token al header
+	req.Header.Add("Authorization","Bearer " + user.AccessToken)
+
+	// 3. creamos el cliente
+	client := &http.Client{}
+
+	// 4. realizamos al consulta
+	resp, err := client.Do(req)
+
+	if err != nil {
+		fmt.Println(err)
+		return ReqUserData{},errors.New("error al testear el token")
+	}
+	defer resp.Body.Close()
+
+	data, _ := ioutil.ReadAll(resp.Body)
+
+	fmt.Println(string(data))
+
+	if string(data)==tokenError{
+		tokenRequest(user.RefreshToken, false)
+		user,err = obtenerDatosUsuario(id)
+		if err != nil {
+			fmt.Println(err)
+			return ReqUserData{},errors.New("error al cargar los datos de usuario")
+		}
+		fmt.Println("token actualizado")
+		return user,nil
+	}
+	return user,nil
+}
+//---------------------------------------------------------------------------------------------
