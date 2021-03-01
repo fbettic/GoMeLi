@@ -23,15 +23,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f4e1b996-c0cc-4bca-b610-9554f0830898" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/api_back/controller_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/api_back/json/response.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_back/controller.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_back/controller.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_back/controller_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_back/controller_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_back/dbController.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_back/dbController.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_back/json/token.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_back/json/users.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/api_back/oauthController.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_back/oauthController.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_back/userController.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/api_back/utilities.go" beforeDir="false" afterPath="$PROJECT_DIR$/api_back/utilities.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
@@ -95,7 +91,7 @@
       <recent name="C:\Users\feder\go\src\GoMeLi" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.go build github.com/Chino976/GoMeLi">
+  <component name="RunManager" selected="Go Build.go build GoMeLI">
     <configuration name="go build GoMeLI" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="GoMeLI" />
       <working_directory value="$PROJECT_DIR$" />
@@ -115,6 +111,16 @@
       <directory value="$PROJECT_DIR$" />
       <method v="2" />
     </configuration>
+    <configuration name="go test github.com/Chino976/GoMeLi/api_back (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="GoMeLI" />
+      <working_directory value="$PROJECT_DIR$/api_back" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/Chino976/GoMeLi/api_back" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
     <configuration name="go test github.com/Chino976/GoMeLi/api_back" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="GoMeLI" />
       <working_directory value="$PROJECT_DIR$/api_back" />
@@ -127,9 +133,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.go build GoMeLI" />
+        <item itemvalue="Go Test.go test github.com/Chino976/GoMeLi/api_back (1)" />
         <item itemvalue="Go Build.go build github.com/Chino976/GoMeLi" />
         <item itemvalue="Go Test.go test github.com/Chino976/GoMeLi/api_back" />
-        <item itemvalue="Go Build.go build GoMeLI" />
       </list>
     </recent_temporary>
   </component>
@@ -157,12 +164,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/api_back/controller.go</url>
-          <line>236</line>
+          <line>254</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/api_back/controller.go</url>
-          <line>232</line>
+          <line>250</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
@@ -182,7 +189,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/api_back/controller.go</url>
-          <line>215</line>
+          <line>233</line>
           <option name="timeStamp" value="20" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">

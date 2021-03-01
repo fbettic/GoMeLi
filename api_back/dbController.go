@@ -88,7 +88,7 @@ func obtenerDatosUsuario (id string) (ReqUserData, error) {
 		return ReqUserData{}, err
 	}
 
-	fmt.Println(user)
+	//fmt.Println(user)
 
 	return user, nil
 }

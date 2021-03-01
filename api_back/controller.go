@@ -52,10 +52,27 @@ func AddItem(c*gin.Context) {
 
 	fmt.Println(string(b))
 
-	// realizamos el post de los datos a mercado libre
+
+
+	// 1. creamos la request
+	req, _ := http.NewRequest(http.MethodPost, "https://api.mercadolibre.com/items", bytes.NewBuffer(b))
+
+	// 2. Añadimos el access token al header
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization","Bearer " + user.AccessToken)
+
+	// 3. creamos el cliente
+	client := &http.Client{}
+
+	// 4. realizamos al consulta
+	resp, err := client.Do(req)
+
+	/* realizamos el post de los datos a mercado libre
 	resp, err := http.Post("https://api.mercadolibre.com/items?access_token=" + user.AccessToken,
 		"application/json; application/x-www-form-urlencoded",
 		bytes.NewBuffer(b))
+	*/
+
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
@@ -70,7 +87,7 @@ func AddItem(c*gin.Context) {
 	// leemos la respuesta de MeLi, que seran los datos del nuevo producto ya publicado
 	data, err := ioutil.ReadAll(resp.Body)
 
-	fmt.Println(data)
+	fmt.Println(string(data))
 
 	if err != nil {
 		fmt.Println(fmt.Errorf("error %v",err.Error()))
@@ -160,9 +177,27 @@ func SoldList(user ReqUserData,chSoldList chan []soldItem){
 		chSoldList <- []soldItem{}
 		return
 	}
+	var auxlist []soldItem
 
+	for i:=0;i< len(soldItemsList);i++ {
+		exist := false
+		for j:=0;j< len(auxlist);j++{
+			if soldItemsList[i].ItemId == auxlist[j].ItemId{
+				exist = true
+			}
+		}
+		if !exist {
+			auxlist = append(auxlist,soldItemsList[i])
+			for j:=i+1;j< len(soldItemsList);j++{
+				if auxlist[len(auxlist)-1].ItemId == soldItemsList[j].ItemId{
+					auxlist[len(auxlist)-1].Quantity = auxlist[len(auxlist)-1].Quantity + soldItemsList[j].Quantity
+					auxlist[len(auxlist)-1].TotalPaidAmount = auxlist[len(auxlist)-1].TotalPaidAmount + soldItemsList[j].TotalPaidAmount
+				}
+			}
+		}
+	}
 
-	chSoldList <- soldItemsList
+	chSoldList <- auxlist
 
 }
 
@@ -207,6 +242,12 @@ func Answer(c*gin.Context){
 
 	// cerramos el body de la respuesta
 	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+
+	datres := string(data)
+
+	fmt.Println(datres)
 
 	response := MessageStruct{"Respuesta enviada con exito", 200}
 	c.JSON(200, response)

@@ -350,7 +350,7 @@ func testToken(id string) (ReqUserData,error){
 
 	data, _ := ioutil.ReadAll(resp.Body)
 
-	fmt.Println(string(data))
+	//fmt.Println(string(data))
 
 	if string(data)==tokenError{
 		tokenRequest(user.RefreshToken, false)
