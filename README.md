@@ -1,5 +1,8 @@
 # GoMeLi
+NECESITA ACTUALIZACION Y MEJORAS ( ANTES FUNCIONABA :) )
+
 Proyecto creado para la materia LAB3
+Es una API con frontend (Boostrap, PHP) y backend (Go, MySQL), utilizada para la gestion de compras, ventas, publicacion y consultas de items de una cuenta de mercado libre
 
 Instalación del paquete:
 
